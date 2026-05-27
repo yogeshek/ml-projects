@@ -5,8 +5,15 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 import pickle
+import os
+from pathlib import Path
 
-df =pd.read_csv('data/spam.csv', encoding='latin-1')
+# Get project root directory (3 levels up from this file)
+PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
+DATA_PATH = PROJECT_ROOT / 'data' / 'spam.csv'
+MODELS_PATH = PROJECT_ROOT / 'models'
+
+df =pd.read_csv(DATA_PATH, encoding='latin-1')
 df =df[['v1','v2']]
 df.columns = ['label','message']
 
@@ -104,16 +111,20 @@ print("\n[[True Ham, False Spam]")
 print("[False Ham, True Spam]]")
 
 #save the training model
-with open('models/spam_classifier.pkl','wb') as f:
+MODELS_PATH.mkdir(exist_ok=True)
+model_file = MODELS_PATH / 'spam_classifier.pkl'
+vectorizer_file = MODELS_PATH / 'vectorizer.pkl'
+
+with open(model_file,'wb') as f:
     pickle.dump(model,f)
 #save the vectorizer
-with open('models/vectorizer.pkl', 'wb') as f:
+with open(vectorizer_file, 'wb') as f:
     pickle.dump(vectorizer, f)
-    
+
 print("\nModel and Vectorizer saved successfully!")
 print("Files saved:")
-print("- models/spam_classifier.pkl")
-print("- models/vectorizer.pkl")
+print(f"- {model_file}")
+print(f"- {vectorizer_file}")
 
     
     

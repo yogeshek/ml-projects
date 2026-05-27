@@ -1,8 +1,14 @@
 import pandas as pd
 import numpy as np
+from pathlib import Path
 
-#1. Reading Data 
-df=pd.read_csv('data/IMDB Dataset.csv', encoding='latin-1')
+# Get project root directory (3 levels up from this file)
+PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
+DATA_PATH = PROJECT_ROOT / 'data' / 'IMDB Dataset.csv'
+MODELS_PATH = PROJECT_ROOT / 'models'
+
+#1. Reading Data
+df=pd.read_csv(DATA_PATH, encoding='latin-1')
 df.columns = ['review','sentiment']
 # print(df.head())
 
@@ -86,8 +92,18 @@ print(cm)
 
 #save the training model
 import pickle
-with open ('models/sentiment_classifier.pkl','wb') as f:
+MODELS_PATH.mkdir(exist_ok=True)
+model_file = MODELS_PATH / 'sentiment_classifier.pkl'
+vectorizer_file = MODELS_PATH / 'sentiment_vectorizer.pkl'
+
+with open(model_file,'wb') as f:
     pickle.dump(model,f)
+with open(vectorizer_file,'wb') as f:
+    pickle.dump(vectorizer,f)
+
+print("\nModel and Vectorizer saved successfully!")
+print(f"- {model_file}")
+print(f"- {vectorizer_file}")
 
     
 

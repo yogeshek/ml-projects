@@ -3,9 +3,12 @@
 # re:  for text cleaning
 import pickle
 import re
-#2 text cleaning
-# we must use the exact same preprocessing as training
 import sys
+from pathlib import Path
+
+# Get project root directory (3 levels up from this file)
+PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
+MODELS_PATH = PROJECT_ROOT / 'models'
 
 def clean_text(text):
     text = text.lower()
@@ -17,15 +20,19 @@ def clean_text(text):
 def load_models():
     """load the trained model and vectorizer"""
     try:
-        with open('models/spam_classifier.pkl','rb') as f:
+        model_file = MODELS_PATH / 'spam_classifier.pkl'
+        vectorizer_file = MODELS_PATH / 'vectorizer.pkl'
+
+        with open(model_file,'rb') as f:
             model = pickle.load(f)
-        with open('models/vectorizer.pkl','rb') as f:
+        with open(vectorizer_file,'rb') as f:
             vectorizer = pickle.load(f)
-            
+
         print("model loaded successfully!\n")
         return model, vectorizer
     except FileNotFoundError:
         print("Error: Model files not found!")
+        print(f"Expected files at: {MODELS_PATH}")
         print("please run train.py to load the models")
         sys.exit(1)    
         
