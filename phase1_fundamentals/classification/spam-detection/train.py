@@ -113,7 +113,7 @@ print("[False Ham, True Spam]]")
 #save the training model
 MODELS_PATH.mkdir(exist_ok=True)
 model_file = MODELS_PATH / 'spam_classifier.pkl'
-vectorizer_file = MODELS_PATH / 'vectorizer.pkl'
+vectorizer_file = MODELS_PATH / 'spam_vectorizer.pkl'
 
 with open(model_file,'wb') as f:
     pickle.dump(model,f)

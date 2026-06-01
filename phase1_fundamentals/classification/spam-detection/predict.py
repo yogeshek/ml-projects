@@ -21,7 +21,7 @@ def load_models():
     """load the trained model and vectorizer"""
     try:
         model_file = MODELS_PATH / 'spam_classifier.pkl'
-        vectorizer_file = MODELS_PATH / 'vectorizer.pkl'
+        vectorizer_file = MODELS_PATH / 'spam_vectorizer.pkl'
 
         with open(model_file,'rb') as f:
             model = pickle.load(f)

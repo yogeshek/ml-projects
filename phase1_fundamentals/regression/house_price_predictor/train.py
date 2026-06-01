@@ -78,7 +78,7 @@ MODELS_PATH.mkdir(exist_ok=True)
 
 with open(MODELS_PATH / 'linear_regression_housing.pkl', 'wb') as f:
     pickle.dump(model, f)
-with open(MODELS_PATH / 'scalar_housing.pkl', 'wb') as f:
+with open(MODELS_PATH / 'linear_scalar_housing.pkl', 'wb') as f:
     pickle.dump(scaler, f)
     
 

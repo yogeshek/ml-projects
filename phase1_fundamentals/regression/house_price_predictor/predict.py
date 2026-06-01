@@ -13,7 +13,7 @@ MODELS_PATH = PROJECT_ROOT / 'models'
 def load_models():
     with open(MODELS_PATH / 'linear_regression_housing.pkl', 'rb') as f:
         model = pickle.load(f)
-    with open(MODELS_PATH / 'scalar_housing.pkl', 'rb') as f:
+    with open(MODELS_PATH / 'linear_scalar_housing.pkl', 'rb') as f:
         scaler = pickle.load(f)
     return model, scaler
 
