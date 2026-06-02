@@ -53,7 +53,7 @@ x_train, x_test, y_train, y_test = train_test_split(
 #7 create and train model
 
 # model = LinearRegression()
-model = RandomForestRegressor(n_estimators=60, random_state=42, n_jobs=-1)
+model = RandomForestRegressor(n_estimators=35, random_state=42, n_jobs=-1)
 # y=w1​x1​+w2​x2​+⋯+wn​xn​+b
 model.fit(x_train, y_train)
 #This is where the actual mathematics happens.
