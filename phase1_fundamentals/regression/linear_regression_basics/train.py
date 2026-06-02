@@ -2,6 +2,8 @@ import pandas as pd
 from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
+import pickle
+from pathlib import Path
 
 #project path
 PROJECT_ROOT =Path(__file__).parent.parent.parent.parent
@@ -32,21 +34,23 @@ print(df.head)
 # #***********OUTLIERS HANDLING*******************
 
 #5 number summary
-min_val = df['SalePrice'].min()
-Q1 = df['SalePrice'].quantile(0.25)
-median = df['SalePrice'].median()
-Q3 = df['SalePrice'].quantile(0.75)
-max_val = df['SalePrice'].max()
+def remove_outliers(df, column='SalePrice'):
+    min_val = df['SalePrice'].min()
+    Q1 = df['SalePrice'].quantile(0.25)
+    median = df['SalePrice'].median()
+    Q3 = df['SalePrice'].quantile(0.75)
+    max_val = df['SalePrice'].max()
 
-IQR = Q3 - Q1
-lower_bound = Q1 - 1.5 * IQR
-upper_bound = Q3 + 1.5 * IQR
+    IQR = Q3 - Q1
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
 
-print(f"lower bound: {lower_bound}")
-sales_outliers = df[(df['SalePrice'] < lower_bound) | (df['SalePrice'] > upper_bound)]
-# print(sales_outliers)
-print(f"outliers row counts: {len(sales_outliers)}")
-df_clean = df[~((df['SalePrice'] < lower_bound) | (df['SalePrice'] > upper_bound))]
+    # print(f"lower bound: {lower_bound}")
+    # sales_outliers = df[(df['SalePrice'] < lower_bound) | (df['SalePrice'] > upper_bound)]
+    # print(sales_outliers)
+    # print(f"outliers row counts: {len(sales_outliers)}")
+    df_clean = df[~((df['SalePrice'] < lower_bound) | (df['SalePrice'] > upper_bound))]
+    return df_clean
 
 
 
@@ -114,7 +118,8 @@ df_clean = df[~((df['SalePrice'] < lower_bound) | (df['SalePrice'] > upper_bound
 # print(df_clean.head)
 # print(df_clean.info)
 
-#PREPARE FEATURE AND TARGET
+#PREPARE FEATURE AND 
+df_clean = remove_outliers(df, column='SalePrice')
 
 x = df_clean.drop('SalePrice', axis=1)
 y = df_clean['SalePrice']
@@ -191,6 +196,15 @@ mae = mean_absolute_error(y_test,y_pred)
 print(f"r2_score = : {r2:.4f}")
 print(f"root mean square error: {rmse:.2f}")
 print(f"mean absolute error: {mae:.2f}")
+
+#Save models
+MODELS_PATH.mkdir(exist_ok=True)
+
+with open(MODELS_PATH / 'rf_linear_regression_housing.pkl', 'wb') as f:
+    pickle.dump(model, f)
+
+
+
 
 
 
