@@ -79,7 +79,7 @@ print(f"\nvectorized training shape: {X_train_vec.shape}")
 print(f"vectorized testing shpe: {X_test_vec.shape}")
 print(f"number of features: {len(vectorizer.get_feature_names_out())}")
 
-#EACH MESSAGE IS Now represneted by 300 numbers
+#EACH MESSAGE IS Now represneted by 2000 numbers
 
 #5 train model
 #train a naive Bayes classifier on the training data
