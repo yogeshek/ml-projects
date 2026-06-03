@@ -58,9 +58,11 @@ vectorizer = TfidfVectorizer(
     lowercase= True
 )
 
-#TF(t,d) = (Number of times term t appears in document d) / (Total number of terms in document d)
-#IDF(t) = log( (Total number of documents) / (Number of documents containing term t) ) + 1
-# TF-IDF = TF*IDF
+    #TF(t,d) = (Number of times term t appears in document d) / (Total number of terms in document d)
+    #IDF(t) = log( (Total number of documents) / (Number of documents containing term t) ) + 1
+    # TF-IDF = TF*IDF
+
+
 x_train_vec=vectorizer.fit_transform(x_train)
 x_test_vec = vectorizer.transform(x_test) 
 
@@ -74,8 +76,185 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 nb_model = MultinomialNB()
+    # Multinomial Naive Bayes (MultinomialNB)
+    # Uses Bayes' theorem to classify text.
+    # Normally expects word counts, but can also use TF-IDF weights
+    # (treated as weighted/fractional counts).
+
+    # Example training data:
+    # 1. "excellent movie good to watch" -> Positive
+    # 2. "poor movie don't watch"        -> Negative
+
+    # Step 1: Build vocabulary
+    # [excellent, movie, good, to, watch, poor, don't]
+    # Vocabulary size V = 7
+
+    # Step 2: Count words per class
+    # Positive: [1,1,1,1,1,0,0], Npos = 5
+    # Negative: [0,1,0,0,1,1,1], Nneg = 4
+
+    # Step 3: Calculate conditional probabilities using
+    # Laplace smoothing (alpha = 1)
+
+    # Positive denominator = Npos + alpha*V = 5 + 7 = 12
+    # P(excellent|Positive) = (1+1)/12 = 2/12
+    # P(movie|Positive)     = (1+1)/12 = 2/12
+    # P(good|Positive)      = (1+1)/12 = 2/12
+    # P(to|Positive)        = (1+1)/12 = 2/12
+    # P(watch|Positive)     = (1+1)/12 = 2/12
+    # P(poor|Positive)      = (0+1)/12 = 1/12
+    # P(don't|Positive)     = (0+1)/12 = 1/12
+
+    # Negative denominator = Nneg + alpha*V = 4 + 7 = 11
+    # P(excellent|Negative) = (0+1)/11 = 1/11
+    # P(movie|Negative)     = (1+1)/11 = 2/11
+    # P(good|Negative)      = (0+1)/11 = 1/11
+    # P(to|Negative)        = (0+1)/11 = 1/11
+    # P(watch|Negative)     = (1+1)/11 = 2/11
+    # P(poor|Negative)      = (1+1)/11 = 2/11
+    # P(don't|Negative)     = (1+1)/11 = 2/11
+
+    # Step 4: Classify new sentence: "excellent movie watch"
+
+    # Score(Positive)
+    # = P(Positive) * P(excellent|Positive)
+    #               * P(movie|Positive)
+    #               * P(watch|Positive)
+
+    # Score(Negative)
+    # = P(Negative) * P(excellent|Negative)
+    #               * P(movie|Negative)
+    #               * P(watch|Negative)
+
+    # Predict the class with the higher score.
+        # Scorepos​=0.5×P(excellent∣Positive)×P(movie∣Positive)×P(watch∣Positive) = 0.5×2/12​×2/12​×2/12 = 0.00231
+        # ScoreNeg​=0.5×P(excellent∣Negative)×P(movie∣Negative)×P(watch∣Negative) = 0.5×1/11​×2/11​×2/11 = 0.00150
+        # Prediction = Positive as​ 0.00231 > 0.00150      
+    
+    # In practice, scikit-learn uses log probabilities for numerical stability.    
+    
 rf_model = RandomForestClassifier()
+    # Ensemble learning algorithm that combine multiple decision tree.
+    # Each tree is trained on a random subset of rows and features
+    # Final decision is made by majority voting among all trees
+    
+    # Example Training Data
+    # ---------------------------------------------------
+    # Review                          Label
+    # ---------------------------------------------------
+    # "excellent movie good watch"    Positive
+    # "poor movie don't watch"        Negative
+    # "good story excellent acting"   Positive
+    # "boring movie poor acting"      Negative
+    
+    # Step 1: Convert text into numeric features
+    # (e.g. TF-IDF)
+    #
+    #               excellent movie good watch poor acting boring
+    # Review1  ->      1.2      0.3   0.8  0.4   0.0   0.0   0.0
+    # Review2  ->      0.0      0.3   0.0  0.4   1.1   0.0   0.0
+    # Review3  ->      1.0      0.0   0.9  0.0   0.0   1.2   0.0
+    # Review4  ->      0.0      0.5   0.0  0.0   1.0   1.0   1.3
+    
+    # Step 2: Create multiple Decision Trees
+    #        
+    # Tree 1:
+        # - Trained on random rows
+        # random rows - Bootstrap Sampling with replacement
+        # Eg Original rows 1, 2, 3, 4, Random sample for tree1 1, 1, 3, 4
+        
+        # - Uses random subset of features
+        # random subset of features
+        # suppose we have 8 [feauture excellent movie good watch poor acting boring story], A normal Decision Tree considers all 8 features at every split.
+        # Random Forest does not use all 8
+        # Random Forest choose lets say 3 feature-random subset(excellent,poor,story) and only one of the 3 feature(best- based on entropy) is allowed to split the root node.
+        # At the next node- let say 3 differnet feaures - random subset(acting,watch,poor) are slected and 1 best among the 3 is allowed to split it
+        # subset should be root(total features),2 or 3 when total is 8
+    # Tree 2: Repeat the same as tree1
+    # Tree 3: same as above
+    
+    # Step 3: Prediction
+    # predict "excellent movie watch"
+    # Tree 1 -> Positive
+    # Tree 2 -> Positive
+    # Tree 3 -> Negative
+    # Tree 4 -> Positive
+    # Tree 5 -> Positive
+    
+    #votes : Positive = 4
+    #        Negative = 1
+    #final prediction: Positive         
+          
+
 lr_model = LogisticRegression(max_iter=1000)
+    # For LogisticRegression the algorithm is very different from NB(learns word probabiliyt) and RF(learns decision rules)
+    # linear classification algorithm that learns  a weight for each feaure
+    # positive word get positive wieghts and negative word get negative weights
+    # the weighted sum is passed through the sigmoid function to obtain the probability
+
+    # Example training data:
+    # 1. "excellent movie good watch" -> Positive (1)
+    # 2. "poor movie don't watch"     -> Negative (0)
+    
+    # Step 1: Build vocabulary
+    # [excellent, movie, good, watch, poor, don't]
+    
+    # Step 2: Convert text to TF-IDF features
+    #
+    # Review1 -> [1.2, 0.3, 0.8, 0.4, 0.0, 0.0]
+    # Review2 -> [0.0, 0.3, 0.0, 0.4, 1.1, 1.0]
+    
+    # Step 3 : Learn weight from training data
+    # for "excellent movie good watch"
+    # model learns z=b+w1​x1​+w2​x2​+⋯+wn​xn​
+    
+    # starting with w=0 b=0, then z=0
+    # P(y=1)=1 / 1+e−z as z=0, ​P(y=1)=0.5 but the actual label is positive=1, predicted = 0.5
+    
+    # there fore weight get updtaed Wnew​=Wold​−η×gradient
+    # η= Step size and gradient = =(y^​−y)xj​. Xexcellent​=1, So (y^−y)x=(0.5−1)×1=−0.5, gradient=-0.5
+    # Wnew=0−0.1(−0.5) = 0.05 
+    # Example learned weights:
+    #
+    # excellent = +2.5
+    # good      = +1.8
+    # movie     = +0.1
+    # watch     = +0.2
+    # poor      = -2.2
+    # don't     = -1.9
+    #
+    # Positive words get positive weights.
+    # Negative words get negative weights.
+
+    # Step 4: Predict new sentence
+    #
+    # "excellent movie watch"
+    #
+    # TF-IDF:
+    # excellent = 1.3
+    # movie     = 0.2
+    # watch     = 0.4
+
+    # Linear score (z):
+    #
+    # z = intercept + 1.3*(2.5) + 0.2*(0.1) + 0.4*(0.2)
+    # Assume intercept = -1
+    # z = -1 + 3.25 + 0.02 + 0.08
+    # z = 2.35
+    
+    # Step 5: Convert score to probability using sigmoid, z=2.35
+    # P(Positive) = 1 / (1 + e^(-z)) =0.913
+    
+    # Step 6: Classification
+    #
+    # If probability >= 0.5:
+    #     Positive
+    # Else:
+    #     Negative
+    # 0.913 > 0.5 Prediction = Positive
+    
+ 
+
 svc_model = SVC(kernel='linear')
 
 nb_model.fit(x_train_vec, y_train)
