@@ -263,11 +263,15 @@ lr_model.fit(x_train_vec, y_train)
 svc_model.fit(x_train_vec, y_train)
 
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, precision_score, recall_score
+#acuracy = correct_prediction/Total predictions
+#precision = postive/predicted positive = TP/TP+FP -- lesser value means negative are classified as postive
+#recall = predicted postive / actual positive  = TP/TP+FN -- lesser vlaue means positive are classified as negative
+#F1 score = F1=2PR/P+R -- A single score that balances precision and recall, HIGHER F1 means both precision and recall are reasonably good.
 
 nb_y_pred =nb_model.predict(x_test_vec)
 nb_accuracy =  accuracy_score(y_test, nb_y_pred)
-nb_precision = precision_score(y_test, nb_y_pred)
-nb_recall = recall_score(y_test, nb_y_pred)
+nb_precision = precision_score(y_test, nb_y_pred, pos_label=1) # for negative class pos_label=0
+nb_recall = recall_score(y_test, nb_y_pred, pos_label=1)
 # print(f"nb_accuracy :{nb_accuracy*100:.1f}")
 
 rf_y_pred =rf_model.predict(x_test_vec)
