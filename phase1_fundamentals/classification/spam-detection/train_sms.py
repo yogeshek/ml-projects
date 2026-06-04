@@ -20,12 +20,30 @@ df['Class']=df['Class'].map({'ham':0, 'spam':1}) # mapping to binary and assigni
 
 #cleand the text(Message)
 import re
+from nltk.stem import WordNetLemmatizer
+
+# Download required NLTK data (run once)
+# try:
+#     nltk.data.find('corpora/wordnet.zip')
+# except LookupError:
+#     nltk.download('wordnet')
+#     nltk.download('omw-1.4')
+
+lemmatizer = WordNetLemmatizer()
+print("******************************")
+print(lemmatizer.lemmatize("running", pos='v')) 
+
 def clean_text(text):
     text = text.lower()
     text = re.sub(r'[^a-zA-Z\s]','',text)
     text = ' '.join(text.split())
+    words = text.split()
+    lemmatized_words = [lemmatizer.lemmatize(word) for word in words]
+    text = ' '.join(lemmatized_words)
     return text
 df['Message'] = df['Message'].apply(clean_text)
+
+
 # print(df.head())
 
 # text = "Hello WORLD 123! @#$"
@@ -55,8 +73,31 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 vectorizer = TfidfVectorizer(
     max_features= 1000,
     stop_words= 'english',
-    lowercase= True
+    lowercase= True,
+    ngram_range=(1,2) # use unigrams (1-word) + bigrams (2-word phrases)
 )
+
+    # ngram_range = (1, 2) capture both singel words and 2 word phrases
+    #Eamples:
+    # unigram: ["free", "click", "win"]
+    # bigrams: ["free money", "click here", "win prize"]
+    #this helps capture context - "not good" is differnet from "good"
+    
+    #ngram_range=(1,1)
+    #Number of features: 10
+    #Features: ['can', 'claim', 'click', 'free', 'hello', 'here', 'meet', 'money', 'now', 'prize']
+    #Accuracy: 66.67%
+    
+    #ngram_range=(1,2)
+    #Number of features: 10
+    #Features: ['can', 'can meet', 'claim', 'claim your', 'click', 'click here', 'free', 'free money', 'hello', 'hello can']
+    #Accuracy: 100.00%  (Better - captures phrases!)
+    
+    #ngram_range=(2,2)
+    #Number of features: 10
+    #Features: ['can meet', 'claim your', 'click here', 'click now', 'free money', 'hello can', 'here to', 'meet tomorrow', 'money click', 'now winner']
+    #Accuracy: 100.00%  (Good but misses single word clues)
+
 
     #TF(t,d) = (Number of times term t appears in document d) / (Total number of terms in document d)
     #IDF(t) = log( (Total number of documents) / (Number of documents containing term t) ) + 1
@@ -256,11 +297,104 @@ lr_model = LogisticRegression(max_iter=1000)
  
 
 svc_model = SVC(kernel='linear')
+#for SVC- support vector classifier (with linear kernal)- learns the weight for each feature like LR
+#but the objective is different : find the hyperplane that maximize the margin
+
+#example training data
+#1. "excellent movive good watch" --> Postive(1)
+#2. "poor movie don't watch" --> Negative(0)
+#
+#Step1 - Build Vocabulary
+#['excellent', 'movie', 'good', 'watch', 'poor', 'don't']
+#
+#Step 2 - convert text to tf-idf features
+#
+#Review1 ->[1.2, 0.3, 0.8, 0.4, 0.0, 0.0 ]
+#Review2 ->[0.0, 0.3, 0.0, 0.4, 1.1, 1.0 ]
+#
+#Step 3 - Learns weight using the margin maximization principle
+# for positive example (y=+1): w.x+b>= 1
+# for negative example (y=-1): w.x+b<= -1
+# the width margin is 2/||w}||^2, maximizing margin = minimizing ||w||
+
+#SVS finds w and b such that:
+# w.x+b >=+1 for postive class
+# w.x+b <=-1 for negative class
+#the margin is the distance between the two lines
+#SVC maximize this margin while minimizing classification error
+
+# starting with random w, b. then optimize using Hinge Loss + regularization
+# Hinge loss for single example:
+# L = max(0, 1-y *(w.x+b)).. where y=+1 for postive and -1 for negative
+
+
 
 nb_model.fit(x_train_vec, y_train)
 rf_model.fit(x_train_vec, y_train)
 lr_model.fit(x_train_vec, y_train)
 svc_model.fit(x_train_vec, y_train)
+
+#cross vlidation
+from sklearn.model_selection import cross_val_score, cross_validate
+#vectorize all data for cross-validation
+x_all_vec = vectorizer.fit_transform(x)
+#define models for cross validation
+#perform cross validation for single model
+cv_results = {}
+scores = cross_validate(
+    nb_model,
+    x_all_vec,
+    y,
+    cv = 5,
+    scoring=['accuracy','precision','recall','f1'],
+    return_train_score=False
+)
+cv_results[nb_model] = {
+        'accuracy': scores['test_accuracy'].mean(),
+        'precision': scores['test_precision'].mean(),
+        'recall': scores['test_recall'].mean(),
+        'f1': scores['test_f1'].mean(),
+        'std': scores['test_accuracy'].std()
+    }
+print(f"********************\n{nb_model}:")
+print(f"  Accuracy:  {cv_results[nb_model]['accuracy']*100:.2f}% (+/- {cv_results[nb_model]['std']*100:.2f}%)")
+print(f"  Precision: {cv_results[nb_model]['precision']*100:.2f}%")
+print(f"  Recall:    {cv_results[nb_model]['recall']*100:.2f}%")
+print(f"  F1-Score:  {cv_results[nb_model]['f1']*100:.2f}%")
+
+#perform cross validation for each model
+models = {
+    'Naive Bayes' : nb_model,
+    'Random Forest' : rf_model,
+    'Logistic Regression': lr_model,
+    'SVC' : svc_model
+}
+
+cv_results = {}
+for name , model in models.items():
+    scores = cross_validate(
+        model,
+        x_all_vec,
+        y,
+        cv = 5, #5-fold cross-validation
+        scoring=['accuracy','precision','recall','f1'],
+        return_train_score=False
+    )
+    
+    cv_results[name] = {
+        'accuracy': scores['test_accuracy'].mean(),
+        'precision': scores['test_precision'].mean(),
+        'recall': scores['test_recall'].mean(),
+        'f1': scores['test_f1'].mean(),
+        'std': scores['test_accuracy'].std()
+    }
+    
+    print(f"\n{name}:")
+    print(f"  Accuracy:  {cv_results[name]['accuracy']*100:.2f}% (+/- {cv_results[name]['std']*100:.2f}%)")
+    print(f"  Precision: {cv_results[name]['precision']*100:.2f}%")
+    print(f"  Recall:    {cv_results[name]['recall']*100:.2f}%")
+    print(f"  F1-Score:  {cv_results[name]['f1']*100:.2f}%")    
+
 
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, precision_score, recall_score
 #acuracy = correct_prediction/Total predictions
@@ -294,14 +428,38 @@ print(f"nb_accuracy = {nb_accuracy*100:.1f} : rf_accuracy = {rf_accuracy*100:.1f
 print(f"nb_precision = {nb_precision*100:.1f} : rf_precision = {rf_precision*100:.1f} : lr_precision = {lr_precision*100:.1f}, svc_precision = {svc_precision*100:.1f} ")
 print(f"nb_recall = {nb_recall*100:.1f} : rf_recall = {rf_recall*100:.1f} : lr_recall = {lr_recall*100:.1f}, svc_recall = {svc_recall*100:.1f} ")
 
+# Cross-Validation vs Test Set
+print("\n=== Comparison: Cross-Validation vs Test Set ===")
+print(f"{'Model':<20} {'CV Accuracy':<15} {'Test Accuracy':<15}")
+print("-" * 50)
+print(f"{'Naive Bayes':<20} {cv_results['Naive Bayes']['accuracy']*100:>6.1f}%{'':<8} {nb_accuracy*100:>6.1f}%")
+print(f"{'Random Forest':<20} {cv_results['Random Forest']['accuracy']*100:>6.1f}%{'':<8} {rf_accuracy*100:>6.1f}%")
+print(f"{'Logistic Regression':<20} {cv_results['Logistic Regression']['accuracy']*100:>6.1f}%{'':<8} {lr_accuracy*100:>6.1f}%")
+print(f"{'SVC':<20} {cv_results['SVC']['accuracy']*100:>6.1f}%{'':<8} {svc_accuracy*100:>6.1f}%")
+
+
 print("\nClassification Report:")
+    #precision - when a model predicts  a class how often its correct
+    #recll - of all actual samples of a class, how many did our model find
+    #F1-Score - Harmonic mean of precision and recall (balances both)
+    #support - Number of actual samples belongs to that class (in test)
+    #accuracy - overall percentage of correct predictions.
 print(classification_report(y_test,nb_y_pred,target_names=['ham','spam']))
     
 from sklearn.metrics import roc_auc_score, roc_curve
-import matplotlib.pyplot as plt
 
+# the ROC(receiver operating characteristic curve) curve visualize the trade-off between models ability to correctly identify positive instances
+# versus its tendancy to falsely label negative as positive
+# plots FPR(=FP/FP+TN) on x axis and TPR(=TP/TP+FN) on y axis
+# perfect model - curve goes straight up to (0,1) then right: TPR=1 at FPR=0
+# random model  -  diagonal line from (0,0) to (1,1): TPR=FPR for all thresholds
+# better model - Curves lies closer to the top-left corner
+# the ROC curve is built by computing many (FPR, TPR) pairs- one for each possible threshold (0.0, 1.0)
+
+import matplotlib.pyplot as plt
 auc = roc_auc_score(y_test, nb_y_pred)
 print(f"AUC: {auc:.3f}")
+
 
 #plot roc curve
 fpr, tpr, _ = roc_curve(y_test, nb_y_pred)
@@ -313,8 +471,10 @@ plt.show()
 
 
 #confusion matrix
+# the raw counts(TP, TN, FP, FN) at one threshold
 print("\nConfusion Matrix:")
 cm = confusion_matrix(y_test, nb_y_pred)
 print(cm)
 print("\n[[True Ham, False Spam]")
 print("[False Ham, True Spam]]")
+
