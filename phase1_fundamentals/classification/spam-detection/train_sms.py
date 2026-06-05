@@ -4,7 +4,7 @@ import pandas as pd
 
 #### 1. Get the project directory
 PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
-DATA_PATH = PROJECT_ROOT / 'data' /'spam_sms.csv'
+DATA_PATH = PROJECT_ROOT / 'data' / 'spam_sms.csv'
 MODELS_PATH = PROJECT_ROOT / 'models'
 
 #### 2. Load data
@@ -21,6 +21,7 @@ df['Class']=df['Class'].map({'ham':0, 'spam':1}) # mapping to binary and assigni
 #cleand the text(Message)
 import re
 from nltk.stem import WordNetLemmatizer
+from nltk.stem import PorterStemmer
 
 # Download required NLTK data (run once)
 # try:
@@ -28,18 +29,22 @@ from nltk.stem import WordNetLemmatizer
 # except LookupError:
 #     nltk.download('wordnet')
 #     nltk.download('omw-1.4')
-
+stemmer = PorterStemmer() # Applies crude heuristic rules to chop off common suffixes (like -ing, -ed, -s).
+print("******************************")
+print(stemmer.stem("running"))
 lemmatizer = WordNetLemmatizer()
 print("******************************")
-print(lemmatizer.lemmatize("running", pos='v')) 
+print(lemmatizer.lemmatize("running")) 
 
 def clean_text(text):
     text = text.lower()
     text = re.sub(r'[^a-zA-Z\s]','',text)
     text = ' '.join(text.split())
     words = text.split()
-    lemmatized_words = [lemmatizer.lemmatize(word) for word in words]
-    text = ' '.join(lemmatized_words)
+    # lemmatized_words = [lemmatizer.lemmatize(word, pos='n') for word in words] # by default pos='n' we can say 'v', 'a'
+    # text = ' '.join(lemmatized_words)
+    stemmed_words = [stemmer.stem(word) for word in words] # cut the suffix like 'ing','s' etc better for spam classification
+    text = ' '.join(stemmed_words)
     return text
 df['Message'] = df['Message'].apply(clean_text)
 
@@ -327,8 +332,6 @@ svc_model = SVC(kernel='linear')
 # Hinge loss for single example:
 # L = max(0, 1-y *(w.x+b)).. where y=+1 for postive and -1 for negative
 
-
-
 nb_model.fit(x_train_vec, y_train)
 rf_model.fit(x_train_vec, y_train)
 lr_model.fit(x_train_vec, y_train)
@@ -337,9 +340,10 @@ svc_model.fit(x_train_vec, y_train)
 #cross vlidation
 from sklearn.model_selection import cross_val_score, cross_validate
 #vectorize all data for cross-validation
-x_all_vec = vectorizer.fit_transform(x)
+x_all_vec = vectorizer.fit_transform(x) # vectorize complete data
 #define models for cross validation
 #perform cross validation for single model
+
 cv_results = {}
 scores = cross_validate(
     nb_model,
@@ -363,6 +367,7 @@ print(f"  Recall:    {cv_results[nb_model]['recall']*100:.2f}%")
 print(f"  F1-Score:  {cv_results[nb_model]['f1']*100:.2f}%")
 
 #perform cross validation for each model
+from sklearn.pipeline import Pipeline
 models = {
     'Naive Bayes' : nb_model,
     'Random Forest' : rf_model,
@@ -372,9 +377,15 @@ models = {
 
 cv_results = {}
 for name , model in models.items():
+    pipe = Pipeline([
+        ('tfidf', TfidfVectorizer(max_features=1000, stop_words='english', ngram_range=(1,2))),
+        ('clf', model)
+    ])
+    
     scores = cross_validate(
-        model,
-        x_all_vec,
+        pipe,
+        # x_all_vec, vectorize complete x
+        x,
         y,
         cv = 5, #5-fold cross-validation
         scoring=['accuracy','precision','recall','f1'],
@@ -456,6 +467,8 @@ from sklearn.metrics import roc_auc_score, roc_curve
 # better model - Curves lies closer to the top-left corner
 # the ROC curve is built by computing many (FPR, TPR) pairs- one for each possible threshold (0.0, 1.0)
 
+# nb_y_pred = nb_model.predict_proba(x_test_vec)[:,1] # for smooth curve
+
 import matplotlib.pyplot as plt
 auc = roc_auc_score(y_test, nb_y_pred)
 print(f"AUC: {auc:.3f}")
@@ -477,4 +490,52 @@ cm = confusion_matrix(y_test, nb_y_pred)
 print(cm)
 print("\n[[True Ham, False Spam]")
 print("[False Ham, True Spam]]")
+
+# Save all models and vectorizer to disk
+import joblib
+MODELS_PATH.mkdir(exist_ok=True)  # Create models directory if it doesn't exist
+
+# Save the vectorizer (shared by all models)
+joblib.dump(vectorizer, MODELS_PATH / 'vectorizer.pkl')
+print(f"\n[OK] Saved vectorizer to {MODELS_PATH / 'vectorizer.pkl'}")
+
+# Save all trained models with their performance metrics
+models_to_save = {
+    'naive_bayes': {
+        'model': nb_model,
+        'test_accuracy': nb_accuracy,
+        'test_precision': nb_precision,
+        'test_recall': nb_recall,
+        'cv_accuracy': cv_results['Naive Bayes']['accuracy']
+    },
+    'random_forest': {
+        'model': rf_model,
+        'test_accuracy': rf_accuracy,
+        'test_precision': rf_precision,
+        'test_recall': rf_recall,
+        'cv_accuracy': cv_results['Random Forest']['accuracy']
+    },
+    'logistic_regression': {
+        'model': lr_model,
+        'test_accuracy': lr_accuracy,
+        'test_precision': lr_precision,
+        'test_recall': lr_recall,
+        'cv_accuracy': cv_results['Logistic Regression']['accuracy']
+    },
+    'svc': {
+        'model': svc_model,
+        'test_accuracy': svc_accuracy,
+        'test_precision': svc_precision,
+        'test_recall': svc_recall,
+        'cv_accuracy': cv_results['SVC']['accuracy']
+    }
+}
+
+for model_name, model_data in models_to_save.items():
+    model_path = MODELS_PATH / f'{model_name}.pkl'
+    joblib.dump(model_data, model_path)
+    print(f"[OK] Saved {model_name} to {model_path}")
+    print(f"   Test Accuracy: {model_data['test_accuracy']*100:.1f}%")
+
+print("\n[SUCCESS] All models saved successfully!")
 
