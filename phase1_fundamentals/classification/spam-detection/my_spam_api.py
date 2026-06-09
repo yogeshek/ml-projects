@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 import joblib
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
+from typing import List
 import re
 
 # Pydantic model for request
@@ -155,6 +156,8 @@ def health():
         "vectorizer_loaded" : vectorizer is not None
     }    
         
+#FOR single message
+        
 @app.post("/predict_ensemble")
 def predict_ensemble(msg: Message):
     if not models or not vectorizer:
@@ -170,6 +173,7 @@ def predict_ensemble(msg: Message):
         for name, model_data in models.items():
             model = model_data['model']
             #predict
+            prediction_all = model.predict(vectorized)
             pred = model.predict(vectorized)[0]
             pred_label = "spam" if pred==1 else "ham"
             #get probability if available
@@ -200,6 +204,53 @@ def predict_ensemble(msg: Message):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+# for multiple message
+@app.post("/predict_ensemble_batch")
+def predict_ensemble_batch(messages: List[Message]):
+    if not models or not vectorizer:
+        raise HTTPException(status_code=503, detail="no model found")
+
+    try:
+        cleaned_message = [clean_text(m.text) for m in messages]
+        vectorized_all = vectorizer.transform(cleaned_message)
+        results = []
+
+        for msg_idx in range(len(messages)):
+            predictions = {}
+            votes ={"spam":0, "ham":0}
+            
+            for name, model_data in models.items():
+                model = model_data['model']
+                
+                pred = model.predict(vectorized_all)[msg_idx]
+                pred_label = "spam" if pred ==1 else "ham"
+                
+                if hasattr(model, 'predict_proba'):
+                    prob = model.predict_proba(vectorized_all)[msg_idx][1]*100
+                else:
+                    prob = None
+                predictions[name] = {
+                    "predictions": pred_label,
+                    "confidence": prob,
+                    "model_accuracy": model_data["test_accuracy"]*100
+                }
+                
+                votes[pred_label] += 1
+            final_verdict = "spam" if votes["spam"] > votes["ham"] else "ham"
+            
+            results.append({
+                "message" : messages[msg_idx].text,
+                "cleaned" : cleaned_message[msg_idx],
+                "predictions": predictions,
+                "votes": votes,
+                "final_verdict": final_verdict
+            })
+            
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+                                
     
 #run the server
 if __name__ == "__main__":
