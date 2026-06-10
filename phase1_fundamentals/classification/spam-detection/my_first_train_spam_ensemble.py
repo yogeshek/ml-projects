@@ -51,26 +51,75 @@ x_test_vec = vectorizer.transform(x_test)
 
 # TRAIN THE MODEL ####################################################
 from sklearn.naive_bayes import MultinomialNB
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
 
-model = MultinomialNB()
-model.fit(x_train_vec,y_train)
+nb_model = MultinomialNB()
+rf_model = RandomForestClassifier()
+lr_model = LogisticRegression(max_iter=1000)
+svc_model = SVC(kernel='linear')
+
+nb_model.fit(x_train_vec,y_train)
+rf_model.fit(x_train_vec,y_train)
+lr_model.fit(x_train_vec,y_train)
+svc_model.fit(x_train_vec,y_train)
 
 # PREDICT #############################################################
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-y_pred = model.predict(x_test_vec)
-accuracy = accuracy_score(y_test, y_pred)
-print(f"\nModel Accuracy: {accuracy*100:.2f}%")
+nb_y_pred = nb_model.predict(x_test_vec)
+nb_accuracy = accuracy_score(y_test, nb_y_pred)
+print(f"\nModel Accuracy: {nb_accuracy*100:.2f}%")
+
+rf_y_pred = rf_model.predict(x_test_vec)
+rf_accuracy = accuracy_score(y_test, rf_y_pred)
+print(f"\nModel Accuracy: {rf_accuracy*100:.2f}%")
+
+lr_y_pred = lr_model.predict(x_test_vec)
+lr_accuracy = accuracy_score(y_test, lr_y_pred)
+print(f"\nModel Accuracy: {lr_accuracy*100:.2f}%")
+
+svc_y_pred = svc_model.predict(x_test_vec)
+svc_accuracy = accuracy_score(y_test, svc_y_pred)
+print(f"\nModel Accuracy: {svc_accuracy*100:.2f}%")
+
+
 
 # SAVE TRAINING MODEL ##################################################
 import pickle
-model_file = MODELS_PATH /'my_first_spam_classifier.pkl'
-vectorizer_file = MODELS_PATH / 'my_first_spam_vectorizer.pkl'
 
-with open(model_file, 'wb') as f:
-    pickle.dump(model,f) # pickle - python built in serialization module, convert python object into a  byte stream(serialization)
+vectorizer_file = MODELS_PATH / 'my_first_spam_ensemble_vectorizer.pkl'
+
+# with open(model_file, 'wb') as f:
+#     pickle.dump(model,f) 
 with open(vectorizer_file, 'wb') as f:
-    pickle.dump(vectorizer, f)
+    pickle.dump(vectorizer, f) # pickle - python built in serialization module, convert python object into a  byte stream(serialization)
 
+models_to_save = {
+    'my_naive_bayes': {
+        'model': nb_model,
+        'test_accuracy' : nb_accuracy
+    },
+    'my_random_forest':{
+        'model': rf_model,
+        'test_accuracy': rf_accuracy
+    },
+    'my_logistic_regression':{
+        'model': lr_model,
+        'test_accuracy': lr_model
+    },
+    'my_svc':{
+        'model': svc_model,
+        'test_accuracy': svc_accuracy
+    }
+}
+import joblib
+for model_name, model_data in models_to_save.items():
+    model_path = MODELS_PATH /f'{model_name}.pkl'
+    # with open (model_path, 'wb') as f:
+    #     pickle.dump(model_data,f)
+    joblib.dump(model_data, model_path) # better approach
+    
 
 
 
