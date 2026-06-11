@@ -106,7 +106,7 @@ models_to_save = {
     },
     'my_logistic_regression':{
         'model': lr_model,
-        'test_accuracy': lr_model
+        'test_accuracy': lr_accuracy
     },
     'my_svc':{
         'model': svc_model,
