@@ -1,0 +1,35 @@
+Here's the full item-item collaborative filtering process:
+
+Step 1 — Load data
+
+u.item → movie details (ID, title, genres)
+u.data → user ratings (user ID, item ID, rating)
+
+Step 2 — Create user-item matrix (pivot table)
+
+Rows = movies, Columns = users, Values = ratings
+fill_value=0 for unrated movies
+This gives each movie a "profile" of how all users rated it
+
+Step 3 — Compute cosine similarity between items
+
+Compares every movie's rating vector against every other movie
+Result: 1682 x 1682 matrix (movie vs movie)
+Similarity is based on how similarly users rated two movies
+This is computed once and is the same for all users
+
+Step 4 — For a given user, separate rated vs unrated movies
+
+rated_movies → movies the user has rated (+ their ratings)
+unrated_movies → movies the user hasn't rated (rating = 0)
+
+
+Step 5 — Predict ratings for each unrated movie
+
+For each unrated movie, get its similarity with the user's rated movies
+Predicted rating = sim.dot(rated_movies) / sum(|sim|)
+This is a weighted average — more similar movies influence the prediction more
+Step 6 — Sort and recommend
+
+Sort predicted ratings highest first
+Top N movies = recommendations for that user

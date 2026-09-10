@@ -81,3 +81,5 @@ imdb = weighted_rating.merge(df_item, left_on='item_id',right_on=0)
 # print(imdb)
 
 print(imdb.sort_values(by = "W", ascending=False).head(5))
+
+print(df_item.head())
