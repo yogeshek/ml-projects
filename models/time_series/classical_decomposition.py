@@ -38,11 +38,37 @@ sd= seasonal_decompose(stock_2020['Price'], model='multiplicative', period=10)
 trend = sd.trend
 seasonal = sd.seasonal
 resd = sd.resid
-plt.figure(figsize=(14,10))
-plt.subplot(311)
-plt.plot(trend)
-plt.subplot(312)
-plt.plot(seasonal)
-plt.subplot(313)
-plt.plot(resd)
+# plt.figure(figsize=(14,10))
+# plt.subplot(311)
+# plt.plot(trend)
+# plt.subplot(312)
+# plt.plot(seasonal)
+# plt.subplot(313)
+# plt.plot(resd)
+# plt.show()
+
+estimated = trend + seasonal
+# plt.plot(stock_2020['Close'],color="blue")
+# plt.plot(estimated, color="red")
+# plt.show()
+
+from sklearn.metrics import mean_squared_error
+print(mean_squared_error(stock_2020['Close'], estimated.fillna(0)))
+
+##### STL DECOMPOSITION
+
+# Seasonal Trend Loess(STL) Decomposition
+
+from statsmodels.tsa.seasonal import STL
+
+result = STL(stock_2020['Price'], period=10).fit()
+
+plt.plot(result)
 plt.show()
+
+# plt.figure(figsize=(8,12))
+# plt.subplot(511)
+# plt.plot(estimated, color='blue')
+# plt.subplot(512)
+# plt.plot(result.trend + result.seasonal, color='red')
+# plt.show()
