@@ -37,6 +37,7 @@ estimator = SGDClassifier(
     # loss = 'log',# depliciated- Logistic Regression
     # loss = 'modified_huber', # hybrid loss , cobines properties of hinge and logistic regression
     # loss ='squared_hinge', #similar to hinge- but takes the margin error and square it
+    
     # # below functions used for SGDRegressor to predict continous number.
     # # SGDClassifier adopt them for classification by treating the classes as numerica1 0 and 1 / -1 and +1
     # loss = 'squared_error', # ordinary least square- minimize the error
@@ -48,11 +49,12 @@ estimator = SGDClassifier(
     # learning_rate='optimal', # [(eta = 1.0 /(alpha * (t+10)))] uses heuristic formula(by Leon Bottou) ,shrinks the step size dynamically based on the alpha (current time step t )
     # learning_rate='invascaling', # [eta = eta0 / pow(t, power_t)], default power_t= 0.5 in SGD
     # learning_rate='adaptive', #keep the eta0 as long as the training loss keep going down, if it stop improving by n_iter_no_chage timem, then devide the eta0 by 5.
-    eta0=0.0 # become 0.01 when learning_rate in['constant','invscaling','adaptive']  
+    eta0=1,# when learning_rate in['constant','invscaling','adaptive']  
+    penalty=None
     
 )
 
-SGDClassifier()
+
 
 
 

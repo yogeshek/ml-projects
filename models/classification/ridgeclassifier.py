@@ -2,7 +2,7 @@
 from sklearn.linear_model import RidgeClassifier
 
 estimator = RidgeClassifier(
-    alpha=0.1, #default
+    alpha=1, #default
     fit_intercept=True, # default
     # fit_intercept=False, # when data is alrady centerd
     solver= 'auto', # default
@@ -20,7 +20,7 @@ estimator = RidgeClassifier(
     # calss_weight = {0: 1 , 1: 3} # class 1 mistakes weighted 3 times    
 )
 
-################# RIDGECLASSIFIERCV ############################################
+################# CV - RIDGECLASSIFIERCV ############################################
 
 from sklearn.linear_model import RidgeClassifierCV
 import numpy as np
